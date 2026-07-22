@@ -1,7 +1,8 @@
 import pygame
+import random
 import settings as cfg
-from screens.game_screen import run as game_screen
-from game.entities import Paddle, Brick, Ball
+from screens.game_screen import ApplyBonus
+from game.entities import Paddle, Brick, Ball, PowerUp, POWER_UP_TYPES
 from game.level import load_level
 
 def _bounce_off_rect(ball: Ball, rect: pygame.Rect):
@@ -43,6 +44,7 @@ def _bounce_off_rect(ball: Ball, rect: pygame.Rect):
 def _handle_ball_vs_bricks(
     ball: Ball,
     bricks: list[Brick],
+    power_ups: list[PowerUp],
 ) -> int:
 
     scored = 0
@@ -57,6 +59,12 @@ def _handle_ball_vs_bricks(
         if brick.hp <= 0:
             bricks.remove(brick)
             scored += 10
+            if random.random() < cfg.BONUS_PROBABILITY:
+                power_ups.append(PowerUp(
+                    brick.rect.centerx,
+                    brick.rect.centery,
+                    random.choice(POWER_UP_TYPES),
+                ))
     return scored
 
 def _handle_ball_vs_paddle(ball: Ball, paddle: Paddle) -> None:
@@ -77,6 +85,7 @@ def main():
 
     bricks, rows, cols = load_level(1)
     ball = Ball(cfg.WIDTH // 2, cfg.HEIGHT)
+    power_ups = []
 
     while running:
         # Main Loop
@@ -87,7 +96,15 @@ def main():
 
         paddle.move(keys)
 
-        _handle_ball_vs_bricks(ball, bricks)
+        _handle_ball_vs_bricks(ball, bricks, power_ups)
+
+        for power_up in power_ups[:]:
+            power_up.update()
+            if power_up.rect.colliderect(paddle.rect):
+                ApplyBonus(power_up.type, paddle, [ball])
+                power_ups.remove(power_up)
+            elif power_up.rect.top > cfg.HEIGHT:
+                power_ups.remove(power_up)
 
         if ball.rect.colliderect(paddle.rect) and ball.vy > 0:
             _handle_ball_vs_paddle(ball, paddle)
@@ -100,6 +117,9 @@ def main():
         # Draw Section
         paddle.draw(screen)
         ball.draw(screen)
+
+        for power_up in power_ups:
+            power_up.draw(screen)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:   # Press "close" button

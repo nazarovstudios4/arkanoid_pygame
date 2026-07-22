@@ -2,6 +2,12 @@ import pygame
 
 import settings as cfg
 
+POWER_UP_TYPES = [
+    {"type": "paddle_shrink", "letter": "S", "color": cfg.YELLOW},
+    {"type": "ball_speed_up", "letter": "F", "color": cfg.MAGENTA},
+    {"type": "ball_speed_down", "letter": "D", "color": cfg.GREEN},
+]
+
 class Paddle:
     """ Our main player, Paddle, moves only horizontally. """
 
@@ -90,3 +96,25 @@ class Ball:
         """ Renders the Ball. """
         colour = cfg.BALL_COLOR
         pygame.draw.circle(screen, colour, self.rect.center, self.radius)
+
+
+class PowerUp:
+    """ Falling Power-Up actor class. """
+
+    def __init__(self, x: int, y: int, power_up: dict) -> None:
+        self.type = power_up["type"]
+        self.letter = power_up["letter"]
+        self.color = power_up["color"]
+        self.rect = pygame.Rect(x - 12, y - 12, 24, 24)
+        self.speed = 3
+
+    def update(self) -> None:
+        """ Moves the Power-Up down. """
+        self.rect.y += self.speed
+
+    def draw(self, screen: pygame.Surface) -> None:
+        """ Renders the Power-Up. """
+        pygame.draw.rect(screen, self.color, self.rect, border_radius=4)
+        font = pygame.font.Font(None, 24)
+        text = font.render(self.letter, True, cfg.BLACK)
+        screen.blit(text, text.get_rect(center=self.rect.center))
